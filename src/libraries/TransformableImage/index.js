@@ -6,11 +6,12 @@ import ViewTransformer from '../ViewTransformer';
 export default class TransformableImage extends PureComponent {
     static propTypes = {
         image: PropTypes.shape({
-            source: PropTypes.oneOfType([
-                PropTypes.object,
-                PropTypes.number
-            ]).isRequired,
-            dimensions: PropTypes.shape({ width: PropTypes.number, height: PropTypes.number })
+            source: PropTypes.oneOfType([PropTypes.object, PropTypes.number])
+                .isRequired,
+            dimensions: PropTypes.shape({
+                width: PropTypes.number,
+                height: PropTypes.number
+            })
         }).isRequired,
         style: ViewPropTypes ? ViewPropTypes.style : View.propTypes.style,
         onLoad: PropTypes.func,
@@ -33,13 +34,15 @@ export default class TransformableImage extends PureComponent {
         resizeMode: 'contain'
     };
 
-    constructor (props) {
+    constructor(props) {
         super(props);
 
         this.onLayout = this.onLayout.bind(this);
         this.onLoad = this.onLoad.bind(this);
         this.onLoadStart = this.onLoadStart.bind(this);
-        this.getViewTransformerInstance = this.getViewTransformerInstance.bind(this);
+        this.getViewTransformerInstance = this.getViewTransformerInstance.bind(
+            this
+        );
         this.renderError = this.renderError.bind(this);
 
         this.state = {
@@ -51,52 +54,59 @@ export default class TransformableImage extends PureComponent {
         };
     }
 
-    componentWillMount () {
+    componentWillMount() {
         if (!this.state.imageDimensions) {
             this.getImageSize(this.props.image);
         }
     }
 
-    componentDidMount () {
+    componentDidMount() {
         this._mounted = true;
     }
 
-    componentWillReceiveProps (nextProps) {
+    componentWillReceiveProps(nextProps) {
         if (!sameImage(this.props.image, nextProps.image)) {
             // image source changed, clear last image's imageDimensions info if any
-            this.setState({ imageDimensions: nextProps.image.dimensions, keyAcumulator: this.state.keyAcumulator + 1 });
-            if (!nextProps.image.dimensions) { // if we don't have image dimensions provided in source
+            this.setState({
+                imageDimensions: nextProps.image.dimensions,
+                keyAcumulator: this.state.keyAcumulator + 1
+            });
+            if (!nextProps.image.dimensions) {
+                // if we don't have image dimensions provided in source
                 this.getImageSize(nextProps.image);
             }
         }
     }
 
-    componentWillUnmount () {
+    componentWillUnmount() {
         this._mounted = false;
     }
 
-    onLoadStart (e) {
+    onLoadStart(e) {
         this.props.onLoadStart && this.props.onLoadStart(e);
         if (this.state.imageLoaded) {
             this.setState({ imageLoaded: false });
         }
     }
 
-    onLoad (e) {
+    onLoad(e) {
         this.props.onLoad && this.props.onLoad(e);
         if (!this.state.imageLoaded) {
             this.setState({ imageLoaded: true });
         }
     }
 
-    onLayout (e) {
-        let {width, height} = e.nativeEvent.layout;
-        if (this.state.viewWidth !== width || this.state.viewHeight !== height) {
+    onLayout(e) {
+        let { width, height } = e.nativeEvent.layout;
+        if (
+            this.state.viewWidth !== width ||
+            this.state.viewHeight !== height
+        ) {
             this.setState({ viewWidth: width, viewHeight: height });
         }
     }
 
-    getImageSize (image) {
+    getImageSize(image) {
         if (!image) {
             return;
         }
@@ -108,14 +118,22 @@ export default class TransformableImage extends PureComponent {
         }
 
         if (source && source.uri) {
-            Image.getSize(
+            Image.getSizeWithHeaders(
                 source.uri,
+                { ...(source.headers ? { ...source.headers } : {}) },
                 (width, height) => {
                     if (width && height) {
-                        if (this.state.imageDimensions && this.state.imageDimensions.width === width && this.state.imageDimensions.height === height) {
+                        if (
+                            this.state.imageDimensions &&
+                            this.state.imageDimensions.width === width &&
+                            this.state.imageDimensions.height === height
+                        ) {
                             // no need to update state
                         } else {
-                            this._mounted && this.setState({ imageDimensions: { width, height } });
+                            this._mounted &&
+                                this.setState({
+                                    imageDimensions: { width, height }
+                                });
                         }
                     }
                 },
@@ -124,25 +142,62 @@ export default class TransformableImage extends PureComponent {
                 }
             );
         } else {
-            console.warn('react-native-image-gallery', 'Please provide dimensions of your local images');
+            console.warn(
+                'react-native-image-gallery',
+                'Please provide dimensions of your local images'
+            );
         }
     }
 
-    getViewTransformerInstance () {
+    getViewTransformerInstance() {
         return this.refs['viewTransformer'];
     }
 
-    renderError () {
-        return (this.props.errorComponent && this.props.errorComponent()) || (
-            <View style={{ flex: 1, backgroundColor: 'black', alignItems: 'center', justifyContent: 'center' }}>
-                 <Text style={{ color: 'white', fontSize: 15, fontStyle: 'italic' }}>This image cannot be displayed...</Text>
-            </View>
+    renderError() {
+        return (
+            (this.props.errorComponent && this.props.errorComponent()) || (
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: 'black',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <Text
+                        style={{
+                            color: 'white',
+                            fontSize: 15,
+                            fontStyle: 'italic'
+                        }}
+                    >
+                        This image cannot be displayed...
+                    </Text>
+                </View>
+            )
         );
     }
 
-    render () {
-        const { imageDimensions, viewWidth, viewHeight, error, keyAccumulator, imageLoaded } = this.state;
-        const { style, image, imageComponent, resizeMode, enableTransform, enableScale, enableTranslate, onTransformGestureReleased, onViewTransformed } = this.props;
+    render() {
+        const {
+            imageDimensions,
+            viewWidth,
+            viewHeight,
+            error,
+            keyAccumulator,
+            imageLoaded
+        } = this.state;
+        const {
+            style,
+            image,
+            imageComponent,
+            resizeMode,
+            enableTransform,
+            enableScale,
+            enableTranslate,
+            onTransformGestureReleased,
+            onViewTransformed
+        } = this.props;
 
         let maxScale = 1;
         let contentAspectRatio;
@@ -172,29 +227,34 @@ export default class TransformableImage extends PureComponent {
             capInsets: { left: 0.1, top: 0.1, right: 0.1, bottom: 0.1 }
         };
 
-        const content = imageComponent ? imageComponent(imageProps, imageDimensions) : <Image { ...imageProps } />;
+        const content = imageComponent ? (
+            imageComponent(imageProps, imageDimensions)
+        ) : (
+            <Image {...imageProps} />
+        );
 
         return (
             <ViewTransformer
-              ref={'viewTransformer'}
-              key={'viewTransformer#' + keyAccumulator} // when image source changes, we should use a different node to avoid reusing previous transform state
-              enableTransform={enableTransform && imageLoaded} // disable transform until image is loaded
-              enableScale={enableScale}
-              enableTranslate={enableTranslate}
-              enableResistance={true}
-              onTransformGestureReleased={onTransformGestureReleased}
-              onViewTransformed={onViewTransformed}
-              maxScale={maxScale}
-              contentAspectRatio={contentAspectRatio}
-              onLayout={this.onLayout}
-              style={style}>
-                { error ? this.renderError() : content }
+                ref={'viewTransformer'}
+                key={'viewTransformer#' + keyAccumulator} // when image source changes, we should use a different node to avoid reusing previous transform state
+                enableTransform={enableTransform && imageLoaded} // disable transform until image is loaded
+                enableScale={enableScale}
+                enableTranslate={enableTranslate}
+                enableResistance={true}
+                onTransformGestureReleased={onTransformGestureReleased}
+                onViewTransformed={onViewTransformed}
+                maxScale={maxScale}
+                contentAspectRatio={contentAspectRatio}
+                onLayout={this.onLayout}
+                style={style}
+            >
+                {error ? this.renderError() : content}
             </ViewTransformer>
         );
     }
 }
 
-function sameImage (source, nextSource) {
+function sameImage(source, nextSource) {
     if (source === nextSource) {
         return true;
     }
